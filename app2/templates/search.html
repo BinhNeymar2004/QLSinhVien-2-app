@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tìm kiếm Sinh viên</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        button { margin: 10px; padding: 8px 16px; }
+        input { margin: 5px; padding: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Tìm kiếm Sinh viên</h1>
+    <input type="text" id="search-MaSV" placeholder="Nhập mã SV">
+    <button onclick="searchStudent()">Tìm kiếm</button>
+
+    <h2>Kết quả tìm kiếm</h2>
+    <table id="student-table">
+        <thead>
+            <tr>
+                <th>Mã SV</th>
+                <th>Họ tên</th>
+                <th>Ngày sinh</th>
+                <th>Giới tính</th>
+                <th>Địa chỉ</th>
+                <th>Tên lớp</th>
+                <th>Tên khoa</th>
+            </tr>
+        </thead>
+        <tbody id="student-list"></tbody>
+    </table>
+
+    <script>
+        async function searchStudent() {
+            const maSV = document.getElementById('search-MaSV').value;
+            const response = await fetch(`/api/search/${maSV}`);
+            const tbody = document.getElementById('student-list');
+            tbody.innerHTML = '';
+            if (response.ok) {
+                const sv = await response.json();
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${sv.MaSV}</td>
+                    <td>${sv.HoTen}</td>
+                    <td>${sv.NgaySinh || ''}</td>
+                    <td>${sv.GioiTinh || ''}</td>
+                    <td>${sv.DiaChi || ''}</td>
+                    <td>${sv.TenLop || ''}</td>
+                    <td>${sv.TenKhoa || ''}</td>
+                `;
+                tbody.appendChild(row);
+            } else {
+                alert(await response.json().then(res => res.message));
+            }
+        }
+    </script>
+</body>
+</html>

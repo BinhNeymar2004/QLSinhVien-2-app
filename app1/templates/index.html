@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quản lý Sinh viên</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        button { margin: 10px; padding: 8px 16px; }
+        input { margin: 5px; padding: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Quản lý Sinh viên</h1>
+    
+    <!-- Form thêm/sửa sinh viên -->
+    <h2>Thêm/Sửa sinh viên</h2>
+    <form id="student-form">
+        <input type="text" id="MaSV" placeholder="Mã SV" required>
+        <input type="text" id="HoTen" placeholder="Họ tên" required>
+        <input type="date" id="NgaySinh" placeholder="Ngày sinh">
+        <input type="text" id="GioiTinh" placeholder="Giới tính">
+        <input type="text" id="DiaChi" placeholder="Địa chỉ">
+        <input type="text" id="TenLop" placeholder="Tên lớp">
+        <input type="text" id="TenKhoa" placeholder="Tên khoa">
+        <button type="submit">Lưu</button>
+    </form>
+
+    <!-- Form tìm kiếm -->
+    <h2>Tìm kiếm sinh viên</h2>
+    <input type="text" id="search-MaSV" placeholder="Nhập mã SV">
+    <button onclick="searchStudent()">Tìm kiếm</button>
+
+    <!-- Danh sách sinh viên -->
+    <h2>Danh sách sinh viên</h2>
+    <button onclick="fetchStudents()">Tải danh sách</button>
+    <table id="student-table">
+        <thead>
+            <tr>
+                <th>Mã SV</th>
+                <th>Họ tên</th>
+                <th>Ngày sinh</th>
+                <th>Giới tính</th>
+                <th>Địa chỉ</th>
+                <th>Tên lớp</th>
+                <th>Tên khoa</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody id="student-list"></tbody>
+    </table>
+
+    <script>
+        // Lấy danh sách sinh viên
+        async function fetchStudents() {
+            const response = await fetch('/api/sinhvien');
+            const students = await response.json();
+            const tbody = document.getElementById('student-list');
+            tbody.innerHTML = '';
+            students.forEach(sv => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${sv.MaSV}</td>
+                    <td>${sv.HoTen}</td>
+                    <td>${sv.NgaySinh || ''}</td>
+                    <td>${sv.GioiTinh || ''}</td>
+                    <td>${sv.DiaChi || ''}</td>
+                    <td>${sv.TenLop || ''}</td>
+                    <td>${sv.TenKhoa || ''}</td>
+                    <td>
+                        <button onclick="editStudent('${sv.MaSV}')">Sửa</button>
+                        <button onclick="deleteStudent('${sv.MaSV}')">Xóa</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Thêm hoặc sửa sinh viên
+        document.getElementById('student-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const maSV = document.getElementById('MaSV').value;
+            const data = {
+                MaSV: maSV,
+                HoTen: document.getElementById('HoTen').value,
+                NgaySinh: document.getElementById('NgaySinh').value || null,
+                GioiTinh: document.getElementById('GioiTinh').value || null,
+                DiaChi: document.getElementById('DiaChi').value || null,
+                TenLop: document.getElementById('TenLop').value || null,
+                TenKhoa: document.getElementById('TenKhoa').value || null
+            };
+            const method = document.getElementById('MaSV').disabled ? 'PUT' : 'POST';
+            const url = method === 'PUT' ? `/api/sinhvien/${maSV}` : '/api/sinhvien';
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            alert(await response.json().then(res => res.message));
+            fetchStudents();
+            document.getElementById('student-form').reset();
+            document.getElementById('MaSV').disabled = false;
+        });
+
+        // Tìm kiếm sinh viên
+        async function searchStudent() {
+            const maSV = document.getElementById('search-MaSV').value;
+            const response = await fetch(`/api/sinhvien/${maSV}`);
+            const tbody = document.getElementById('student-list');
+            tbody.innerHTML = '';
+            if (response.ok) {
+                const sv = await response.json();
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${sv.MaSV}</td>
+                    <td>${sv.HoTen}</td>
+                    <td>${sv.NgaySinh || ''}</td>
+                    <td>${sv.GioiTinh || ''}</td>
+                    <td>${sv.DiaChi || ''}</td>
+                    <td>${sv.TenLop || ''}</td>
+                    <td>${sv.TenKhoa || ''}</td>
+                    <td>
+                        <button onclick="editStudent('${sv.MaSV}')">Sửa</button>
+                        <button onclick="deleteStudent('${sv.MaSV}')">Xóa</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            } else {
+                alert('Không tìm thấy sinh viên');
+            }
+        }
+
+        // Xóa sinh viên
+        async function deleteStudent(maSV) {
+            if (confirm(`Xóa sinh viên ${maSV}?`)) {
+                const response = await fetch(`/api/sinhvien/${maSV}`, { method: 'DELETE' });
+                alert(await response.json().then(res => res.message));
+                fetchStudents();
+            }
+        }
+
+        // Sửa sinh viên
+        async function editStudent(maSV) {
+            const response = await fetch(`/api/sinhvien/${maSV}`);
+            if (response.ok) {
+                const sv = await response.json();
+                document.getElementById('MaSV').value = sv.MaSV;
+                document.getElementById('MaSV').disabled = true; // Không cho sửa MaSV
+                document.getElementById('HoTen').value = sv.HoTen;
+                document.getElementById('NgaySinh').value = sv.NgaySinh || '';
+                document.getElementById('GioiTinh').value = sv.GioiTinh || '';
+                document.getElementById('DiaChi').value = sv.DiaChi || '';
+                document.getElementById('TenLop').value = sv.TenLop || '';
+                document.getElementById('TenKhoa').value = sv.TenKhoa || '';
+            }
+        }
+    </script>
+</body>
+</html>
